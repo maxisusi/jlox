@@ -1,3 +1,4 @@
+use crate::lox_error::*;
 use crate::token::*;
 use crate::token_type::*;
 
@@ -22,50 +23,62 @@ impl Scanner {
         }
     }
 
+    // Entry point for scanner
     pub fn scan_tokens(&mut self) -> &Vec<Token> {
-        // Transform source into list of chars
         self.lexems = self.source.chars().collect();
+
         while !self.is_end_file() {
             self.start = self.current;
-            self.scan_token();
+            match self.scan_token() {
+                Ok(_) => {}
+                Err(e) => LoxError::report(e, self.current),
+            }
         }
 
-        // Append EOF token to list
+        // Append 'EOF' token to list
         self.tokens
             .push(Token::new(String::new(), self.line, TokenType::Eof));
 
         return &self.tokens;
     }
 
-    fn scan_token(&mut self) {
+    // Scan single token
+    fn scan_token(&mut self) -> Result<(), LoxError> {
         let l = self.advance();
 
         match l {
             // Tokens
-            '/' => self.define_t(TokenType::Slash),
-            '(' => self.define_t(TokenType::LeftParen),
-            ')' => self.define_t(TokenType::RightParen),
-            '{' => self.define_t(TokenType::LeftBrace),
-            '}' => self.define_t(TokenType::RightBrace),
-            ';' => self.define_t(TokenType::Semicolon),
-            ',' => self.define_t(TokenType::Comma),
-            '.' => self.define_t(TokenType::Dot),
-            '-' => self.define_t(TokenType::Minus),
-            '+' => self.define_t(TokenType::Plus),
-            '*' => self.define_t(TokenType::Star),
-            '!' => self.define_t(TokenType::Bang),
-            '=' => self.define_t(TokenType::Equal),
-            '<' => self.define_t(TokenType::Less),
-            '>' => self.define_t(TokenType::Greater),
+            '/' => self.add_token(TokenType::Slash),
+            '(' => self.add_token(TokenType::LeftParen),
+            ')' => self.add_token(TokenType::RightParen),
+            '{' => self.add_token(TokenType::LeftBrace),
+            '}' => self.add_token(TokenType::RightBrace),
+            ';' => self.add_token(TokenType::Semicolon),
+            ',' => self.add_token(TokenType::Comma),
+            '.' => self.add_token(TokenType::Dot),
+            '-' => self.add_token(TokenType::Minus),
+            '+' => self.add_token(TokenType::Plus),
+            '*' => self.add_token(TokenType::Star),
+            '!' => self.add_token(TokenType::Bang),
+            '=' => self.add_token(TokenType::Equal),
+            '<' => self.add_token(TokenType::Less),
+            '>' => self.add_token(TokenType::Greater),
+
             // Ignore whitespace
             '\t' | '\r' | ' ' => {}
+
             // New line
             '\n' => self.line += 1,
+
             // Error
             _ => {
-                return println!("Unrecognized token: '{}' at line: '{}'", l, self.line);
+                return Err(LoxError::error(
+                    self.line,
+                    "Unexpected Character".to_string(),
+                ))
             }
         };
+        Ok(())
     }
 
     fn advance(&mut self) -> char {
@@ -74,11 +87,11 @@ impl Scanner {
         return res;
     }
 
-    fn define_t(&mut self, token: TokenType) {
-        self.add_t(token);
+    fn add_token(&mut self, token: TokenType) {
+        self.add_token_meta(token);
     }
 
-    fn add_t(&mut self, token: TokenType) {
+    fn add_token_meta(&mut self, token: TokenType) {
         let text = self.source[self.start..self.current].to_string();
         let token = Token::new(text, self.line, token);
         self.tokens.push(token);

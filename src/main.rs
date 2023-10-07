@@ -1,3 +1,4 @@
+mod lox_error;
 mod scanner;
 mod token;
 mod token_type;
@@ -25,23 +26,21 @@ fn run(source: String) {
 
     // Print the tokens
     for token in tokens {
-        println!("{}, {:?}, {}", token.lexeme, token.token_type, token.line);
+        println!("{:?}", token);
     }
 }
 
 fn run_file(path: &String) {
-    let file = fs::read_to_string(path).expect("Could not read the file");
-    run(file)
+    match fs::read_to_string(path) {
+        Ok(e) => run(e),
+        Err(e) => eprintln!("Error: {}", e),
+    }
 }
 
 fn run_prompt() {
     loop {
         let mut prompt_input = String::new();
         io::stdin().read_line(&mut prompt_input).unwrap();
-
-        if prompt_input.contains("exit()") {
-            exit(0);
-        }
-        println!("You typed: {}", prompt_input);
+        run(prompt_input)
     }
 }

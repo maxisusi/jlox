@@ -20,8 +20,6 @@ pub enum TokenType {
     Greater,
     // GREATER_EQUAL,
     Less,
-    // LESS_EQUAL,
-
     // Literals
     Eof,
 }
