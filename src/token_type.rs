@@ -14,12 +14,13 @@ pub enum TokenType {
     Star,
     // One or two character tokens
     Bang,
-    // BANG_EQUAL,
+    BangEqual,
     Equal,
-    // EQUAL_EQUAL,
+    EqualEqual,
     Greater,
-    // GREATER_EQUAL,
+    GreaterEqual,
     Less,
+    LessEqual,
     // Literals
     Eof,
 }

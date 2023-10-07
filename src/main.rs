@@ -20,16 +20,6 @@ fn main() {
     }
 }
 
-fn run(source: String) {
-    let mut scanner = scanner::Scanner::new(source);
-    let tokens = scanner.scan_tokens();
-
-    // Print the tokens
-    for token in tokens {
-        println!("{:?}", token);
-    }
-}
-
 fn run_file(path: &String) {
     match fs::read_to_string(path) {
         Ok(e) => run(e),
@@ -42,5 +32,15 @@ fn run_prompt() {
         let mut prompt_input = String::new();
         io::stdin().read_line(&mut prompt_input).unwrap();
         run(prompt_input)
+    }
+}
+
+fn run(source: String) {
+    let mut scanner = scanner::Scanner::new(source);
+    let tokens = scanner.scan_tokens();
+
+    // Print the tokens
+    for token in tokens {
+        println!("{:?}", token);
     }
 }

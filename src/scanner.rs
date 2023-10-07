@@ -59,10 +59,34 @@ impl Scanner {
             '-' => self.add_token(TokenType::Minus),
             '+' => self.add_token(TokenType::Plus),
             '*' => self.add_token(TokenType::Star),
-            '!' => self.add_token(TokenType::Bang),
-            '=' => self.add_token(TokenType::Equal),
-            '<' => self.add_token(TokenType::Less),
-            '>' => self.add_token(TokenType::Greater),
+            '!' => {
+                if self.is_matching('=') {
+                    self.add_token(TokenType::BangEqual);
+                } else {
+                    self.add_token(TokenType::Bang);
+                }
+            }
+            '=' => {
+                if self.is_matching('=') {
+                    self.add_token(TokenType::EqualEqual)
+                } else {
+                    self.add_token(TokenType::Equal)
+                }
+            }
+            '<' => {
+                if self.is_matching('=') {
+                    self.add_token(TokenType::LessEqual)
+                } else {
+                    self.add_token(TokenType::Less)
+                }
+            }
+            '>' => {
+                if self.is_matching('=') {
+                    self.add_token(TokenType::GreaterEqual)
+                } else {
+                    self.add_token(TokenType::Greater)
+                }
+            }
 
             // Ignore whitespace
             '\t' | '\r' | ' ' => {}
@@ -88,10 +112,10 @@ impl Scanner {
     }
 
     fn add_token(&mut self, token: TokenType) {
-        self.add_token_meta(token);
+        self.add_token_object(token);
     }
 
-    fn add_token_meta(&mut self, token: TokenType) {
+    fn add_token_object(&mut self, token: TokenType) {
         let text = self.source[self.start..self.current].to_string();
         let token = Token::new(text, self.line, token);
         self.tokens.push(token);
@@ -99,5 +123,22 @@ impl Scanner {
 
     fn is_end_file(&self) -> bool {
         return self.current >= self.source.len();
+    }
+
+    fn is_matching(&mut self, expected: char) -> bool {
+        if self.is_end_file() {
+            return false;
+        }
+        return match self.source.chars().nth(self.current) {
+            Some(e) => {
+                if e == expected {
+                    self.current += 1;
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+            None => false,
+        };
     }
 }
