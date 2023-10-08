@@ -112,18 +112,40 @@ impl Scanner {
             // New line
             '\n' => self.line += 1,
 
-            // Error
-            _ => {
-                return Err(LoxError::error(
-                    self.line,
-                    "Unexpected Character".to_string(),
-                ))
+            default => {
+                // Digits
+                if default.is_digit(10) {
+                    let digit = self.number();
+                    self.add_token_object(TokenType::Number, Some(digit))
+                } else {
+                    // Error
+                    return Err(LoxError::error(
+                        self.line,
+                        "Unexpected Character".to_string(),
+                    ));
+                }
             }
         };
         Ok(())
     }
 
     /* HELPERS */
+
+    fn number(&mut self) -> String {
+        while self.peek().is_digit(10) {
+            self.advance();
+        }
+
+        // Checks if their is a dot and a number after the current
+        if self.peek() == '.' && self.peek_next().is_digit(10) {
+            self.advance();
+
+            while self.peek().is_digit(10) {
+                self.advance();
+            }
+        }
+        return self.source[self.start..self.current].to_string();
+    }
 
     // Handles string literals
     fn string(&mut self) -> Result<String, String> {
@@ -143,6 +165,13 @@ impl Scanner {
         // Trim the surrounding quotes
         let value = self.source[self.start + 1..self.current - 1].to_string();
         Ok(value)
+    }
+
+    fn peek_next(&self) -> char {
+        if self.current + 1 >= self.source.len() {
+            return '\0';
+        }
+        return self.lexems[self.current + 1];
     }
 
     // Peeks to the next character without consuming it

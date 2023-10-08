@@ -1,5 +1,7 @@
 // this is a comment
 (( )){} // grouping stuff
 !*+-/=<> <= == // operators
-"yoooo"
-"With error
+"Salut mec" // string literal
+1 2 3 4 5 // numbers
+6789101112 // numbers grouped
+13.14151617 // floating numbers 
