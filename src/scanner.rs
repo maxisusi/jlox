@@ -23,9 +23,9 @@ impl Scanner {
         }
     }
 
-    /* SCANNER */
+    /* ## SCANNER ## */
 
-    // Entry point
+    // -> Entry point
     pub fn scan_tokens(&mut self) -> &Vec<Token> {
         self.lexems = self.source.chars().collect();
 
@@ -44,17 +44,18 @@ impl Scanner {
         return &self.tokens;
     }
 
-    // Scan single char
     fn scan_token(&mut self) -> Result<(), LoxError> {
-        let l = self.advance();
+        let l = self.advance_pointer();
 
         match l {
             '/' => {
-                // Comments
+                // Comments (ignored)
                 if self.is_matching('/') {
                     while self.peek() != '\n' && !self.is_end_file() {
-                        self.advance();
+                        self.advance_pointer();
                     }
+
+                // Single slash
                 } else {
                     self.add_token(TokenType::Slash)
                 }
@@ -70,6 +71,7 @@ impl Scanner {
             '+' => self.add_token(TokenType::Plus),
             '*' => self.add_token(TokenType::Star),
             '!' => {
+                // Bang equal
                 if self.is_matching('=') {
                     self.add_token(TokenType::BangEqual);
                 } else {
@@ -77,6 +79,7 @@ impl Scanner {
                 }
             }
             '=' => {
+                // Equal equal
                 if self.is_matching('=') {
                     self.add_token(TokenType::EqualEqual)
                 } else {
@@ -84,6 +87,7 @@ impl Scanner {
                 }
             }
             '<' => {
+                // Less equal
                 if self.is_matching('=') {
                     self.add_token(TokenType::LessEqual)
                 } else {
@@ -91,6 +95,7 @@ impl Scanner {
                 }
             }
             '>' => {
+                // Greater equal
                 if self.is_matching('=') {
                     self.add_token(TokenType::GreaterEqual)
                 } else {
@@ -106,20 +111,23 @@ impl Scanner {
                 };
             }
 
-            // Whitespace
+            // Whitespaces (ignored)
             '\t' | '\r' | ' ' => {}
 
             // New line
             '\n' => self.line += 1,
 
             default => {
-                // Digits
+                // Numbers and floating numbers
                 if default.is_digit(10) {
                     self.number(|s, digit| s.add_token_object(TokenType::Number, Some(digit)));
+
+                // Identifiers and keywords
                 } else if default.is_alphabetic() {
-                    self.identifier(|s| s.add_token(TokenType::Identifier));
+                    self.identifier(|s, token_type| s.add_token(token_type));
+
+                // Unexpected character
                 } else {
-                    // Error
                     return Err(LoxError::error(
                         self.line,
                         "Unexpected Character".to_string(),
@@ -130,31 +138,37 @@ impl Scanner {
         Ok(())
     }
 
-    /* HELPERS */
+    /* ## HELPERS ##  */
+
+    // Handles identifiers and keywords
     fn identifier<F>(&mut self, callback: F)
     where
-        F: Fn(&mut Self),
+        F: Fn(&mut Self, TokenType),
     {
         while self.peek().is_alphanumeric() {
-            self.advance();
+            self.advance_pointer();
         }
-        callback(self)
+
+        let text = &self.source[self.start..self.current];
+        let token_type = KEYWORDS.get(text).unwrap_or(&TokenType::Identifier).clone();
+        callback(self, token_type);
     }
 
+    // Handles numbers and floating numbers
     fn number<F>(&mut self, callback: F)
     where
         F: Fn(&mut Self, String),
     {
         while self.peek().is_digit(10) {
-            self.advance();
+            self.advance_pointer();
         }
 
         // Checks if their is a dot and a number after the current
         if self.peek() == '.' && self.peek_next().is_digit(10) {
-            self.advance();
+            self.advance_pointer();
 
             while self.peek().is_digit(10) {
-                self.advance();
+                self.advance_pointer();
             }
         }
         callback(self, self.source[self.start..self.current].to_string())
@@ -166,28 +180,21 @@ impl Scanner {
             if self.peek() == '\n' {
                 self.line += 1;
             };
-            self.advance();
+            self.advance_pointer();
         }
         if self.is_end_file() {
             return Err("Undeterminated string".to_string());
         }
 
         // Get the closing "
-        self.advance();
+        self.advance_pointer();
 
         // Trim the surrounding quotes
         let value = self.source[self.start + 1..self.current - 1].to_string();
         Ok(value)
     }
 
-    fn peek_next(&self) -> char {
-        if self.current + 1 >= self.source.len() {
-            return '\0';
-        }
-        return self.lexems[self.current + 1];
-    }
-
-    // Peeks to the next character without consuming it
+    // Peeks to the next character without moving the pointer
     fn peek(&self) -> char {
         if self.is_end_file() {
             return '\0';
@@ -195,18 +202,27 @@ impl Scanner {
         return self.lexems[self.current];
     }
 
-    // Advance and consume the character
-    fn advance(&mut self) -> char {
+    // Peek one position after the peek
+    fn peek_next(&self) -> char {
+        if self.current + 1 >= self.source.len() {
+            return '\0';
+        }
+        return self.lexems[self.current + 1];
+    }
+
+    // Advance the pointer the character
+    fn advance_pointer(&mut self) -> char {
         let current_char = self.lexems[self.current];
         self.current += 1;
         return current_char;
     }
 
+    // Check if pointer is at the end of file
     fn is_end_file(&self) -> bool {
         return self.current >= self.source.len();
     }
 
-    // Matches with the next character if found and consumes it
+    // Match a character and advence the pointer
     fn is_matching(&mut self, expected: char) -> bool {
         if self.is_end_file() {
             return false;
@@ -221,7 +237,7 @@ impl Scanner {
         }
     }
 
-    /* FINAL */
+    /* ## TOKEN GENERATOR ## */
 
     fn add_token(&mut self, token: TokenType) {
         self.add_token_object(token, None);
