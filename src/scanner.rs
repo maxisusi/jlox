@@ -115,8 +115,9 @@ impl Scanner {
             default => {
                 // Digits
                 if default.is_digit(10) {
-                    let digit = self.number();
-                    self.add_token_object(TokenType::Number, Some(digit))
+                    self.number(|s, digit| s.add_token_object(TokenType::Number, Some(digit)));
+                } else if default.is_alphabetic() {
+                    self.identifier(|s| s.add_token(TokenType::Identifier));
                 } else {
                     // Error
                     return Err(LoxError::error(
@@ -130,8 +131,20 @@ impl Scanner {
     }
 
     /* HELPERS */
+    fn identifier<F>(&mut self, callback: F)
+    where
+        F: Fn(&mut Self),
+    {
+        while self.peek().is_alphanumeric() {
+            self.advance();
+        }
+        callback(self)
+    }
 
-    fn number(&mut self) -> String {
+    fn number<F>(&mut self, callback: F)
+    where
+        F: Fn(&mut Self, String),
+    {
         while self.peek().is_digit(10) {
             self.advance();
         }
@@ -144,7 +157,7 @@ impl Scanner {
                 self.advance();
             }
         }
-        return self.source[self.start..self.current].to_string();
+        callback(self, self.source[self.start..self.current].to_string())
     }
 
     // Handles string literals
