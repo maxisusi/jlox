@@ -23,7 +23,9 @@ impl Scanner {
         }
     }
 
-    // Entry point for scanner
+    /* SCANNER */
+
+    // Entry point
     pub fn scan_tokens(&mut self) -> &Vec<Token> {
         self.lexems = self.source.chars().collect();
 
@@ -42,13 +44,21 @@ impl Scanner {
         return &self.tokens;
     }
 
-    // Scan single token
+    // Scan single char
     fn scan_token(&mut self) -> Result<(), LoxError> {
         let l = self.advance();
 
         match l {
-            // Tokens
-            '/' => self.add_token(TokenType::Slash),
+            '/' => {
+                // Comments
+                if self.is_matching('/') {
+                    while self.peek() != '\n' && !self.is_end_file() {
+                        self.advance();
+                    }
+                } else {
+                    self.add_token(TokenType::Slash)
+                }
+            }
             '(' => self.add_token(TokenType::LeftParen),
             ')' => self.add_token(TokenType::RightParen),
             '{' => self.add_token(TokenType::LeftBrace),
@@ -88,7 +98,9 @@ impl Scanner {
                 }
             }
 
-            // Ignore whitespace
+            // String literals
+
+            // Whitespace
             '\t' | '\r' | ' ' => {}
 
             // New line
@@ -105,11 +117,42 @@ impl Scanner {
         Ok(())
     }
 
+    /* HELPERS */
+
+    // Peeks to the next character without consuming it
+    fn peek(&self) -> char {
+        if self.is_end_file() {
+            return '\0';
+        }
+        return self.lexems[self.current];
+    }
+
     fn advance(&mut self) -> char {
         let res = self.lexems[self.current];
         self.current += 1;
         return res;
     }
+
+    fn is_end_file(&self) -> bool {
+        return self.current >= self.source.len();
+    }
+
+    // Matches with the next character if found and consumes it
+    fn is_matching(&mut self, expected: char) -> bool {
+        if self.is_end_file() {
+            return false;
+        }
+        let res = self.lexems[self.current];
+
+        if res == expected {
+            self.current += 1;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /* FINAL */
 
     fn add_token(&mut self, token: TokenType) {
         self.add_token_object(token);
@@ -119,26 +162,5 @@ impl Scanner {
         let text = self.source[self.start..self.current].to_string();
         let token = Token::new(text, self.line, token);
         self.tokens.push(token);
-    }
-
-    fn is_end_file(&self) -> bool {
-        return self.current >= self.source.len();
-    }
-
-    fn is_matching(&mut self, expected: char) -> bool {
-        if self.is_end_file() {
-            return false;
-        }
-        return match self.source.chars().nth(self.current) {
-            Some(e) => {
-                if e == expected {
-                    self.current += 1;
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-            None => false,
-        };
     }
 }
