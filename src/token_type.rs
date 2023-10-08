@@ -22,5 +22,6 @@ pub enum TokenType {
     Less,
     LessEqual,
     // Literals
+    String,
     Eof,
 }

@@ -39,7 +39,7 @@ impl Scanner {
 
         // Append 'EOF' token to list
         self.tokens
-            .push(Token::new(String::new(), self.line, TokenType::Eof));
+            .push(Token::new(String::new(), self.line, TokenType::Eof, None));
 
         return &self.tokens;
     }
@@ -99,6 +99,12 @@ impl Scanner {
             }
 
             // String literals
+            '"' => {
+                return match self.string() {
+                    Ok(l) => Ok(self.add_token_object(TokenType::String, Some(l))),
+                    Err(e) => Err(LoxError::error(self.line, e)),
+                };
+            }
 
             // Whitespace
             '\t' | '\r' | ' ' => {}
@@ -119,6 +125,26 @@ impl Scanner {
 
     /* HELPERS */
 
+    // Handles string literals
+    fn string(&mut self) -> Result<String, String> {
+        while self.peek() != '"' && !self.is_end_file() {
+            if self.peek() == '\n' {
+                self.line += 1;
+            };
+            self.advance();
+        }
+        if self.is_end_file() {
+            return Err("Undeterminated string".to_string());
+        }
+
+        // Get the closing "
+        self.advance();
+
+        // Trim the surrounding quotes
+        let value = self.source[self.start + 1..self.current - 1].to_string();
+        Ok(value)
+    }
+
     // Peeks to the next character without consuming it
     fn peek(&self) -> char {
         if self.is_end_file() {
@@ -127,10 +153,11 @@ impl Scanner {
         return self.lexems[self.current];
     }
 
+    // Advance and consume the character
     fn advance(&mut self) -> char {
-        let res = self.lexems[self.current];
+        let current_char = self.lexems[self.current];
         self.current += 1;
-        return res;
+        return current_char;
     }
 
     fn is_end_file(&self) -> bool {
@@ -155,12 +182,12 @@ impl Scanner {
     /* FINAL */
 
     fn add_token(&mut self, token: TokenType) {
-        self.add_token_object(token);
+        self.add_token_object(token, None);
     }
 
-    fn add_token_object(&mut self, token: TokenType) {
+    fn add_token_object(&mut self, token: TokenType, object: Option<String>) {
         let text = self.source[self.start..self.current].to_string();
-        let token = Token::new(text, self.line, token);
+        let token = Token::new(text, self.line, token, object);
         self.tokens.push(token);
     }
 }
